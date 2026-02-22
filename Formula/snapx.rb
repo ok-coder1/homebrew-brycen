@@ -27,6 +27,7 @@ class Snapx < Formula
     depends_on "libx11"
     depends_on "libxcb"
     depends_on "libxrandr"
+    depends_on "libsecret"
   end
 
   def install
