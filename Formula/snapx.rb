@@ -6,7 +6,7 @@ class Snapx < Formula
   sha256 "d85f4d2c3ea55ed5040f166fdf44ce03dd0270dc6ab05ee26771dbd02eaacc06"
   license "GPL-3.0-or-later"
   # Uncomment to bump the package when still using the same SnapX version. Acts like the release field in snapx.spec
-  revision 1
+  revision 2
   head "https://github.com/SnapXL/SnapX.git", branch: "develop"
 
   depends_on "dotnet" => :build
