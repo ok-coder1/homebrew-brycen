@@ -4,46 +4,114 @@ on:
     types: [opened, synchronize]
     paths: ["Formula/snapx.rb"]
   push:
+    paths: ["Formula/snapx.rb"]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
 
 jobs:
   brew-test-bot:
     name: Brew Test Bot
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ macos-latest, ubuntu-latest ]
     steps:
         - name: Set environment variables
           id: set-env
           run: |
-            export HOMEBREW_NO_INSTALL_FROM_API=1
-            export HOMEBREW_NO_ENV_HINTS=1
+            echo "HOMEBREW_NO_INSTALL_FROM_API=1" >> $GITHUB_ENV
+            echo "HOMEBREW_NO_ENV_HINTS=1" >> $GITHUB_ENV
+            echo "HOMEBREW_DEVELOPER=1" >> $GITHUB_ENV
 
         - name: Set up Homebrew
           id: set-up-homebrew
           uses: Homebrew/actions/setup-homebrew@master
 
-        - name: Install required dependencies (on Ubuntu)
-          id: install-deps-ubuntu
+        - name: Prerequisites (Ubuntu)
+          id: prerequisites-ubuntu
           if: runner.os == 'Linux'
           run: |
             sudo add-apt-repository -y ppa:kisak/kisak-mesa
             sudo apt update -y
             sudo apt upgrade -y
             sudo apt install -y xdg-utils mesa-utils x11-xserver-utils
-
-        - name: Create required directories (on Ubuntu)
-          id: create-dirs-ubuntu
-          if: runner.os == 'Linux'
-          run: |
             sudo mkdir -p /run/user/0/SnapX
 
         - name: Brew Test Bot
           id: brew-test-bot
           run: |
-            brew test-bot snapx --publish
+            echo "VERSION=$(brew info --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')" >> GITHUB_ENV
+            brew test-bot --only-cleanup-before
+            brew test-bot --only-setup
+            brew test-bot --only-programmatic-checks
+            brew test-bot --only-formulae --root-url="https://github.com/${{ github.repository }}/releases/download/v$VERSION"
+
+        - name: Upload bottles as artifacts
+          uses: actions/upload-artifact@v7
+          with:
+            name: bottles_${{ matrix.os }}
+            path: '*.bottle.*'
+
+  release:
+      name: Publish Release
+      runs-on: ubuntu-latest
+      needs: brew-test-bot
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v7
+
+        - name: Set up Homebrew
+          id: set-up-homebrew
+          uses: Homebrew/actions/setup-homebrew@master
+
+        - name: Set environment variables
+          id: set-env
+          run: |
+            echo "HOMEBREW_NO_INSTALL_FROM_API=1" >> $GITHUB_ENV
+            echo "HOMEBREW_NO_ENV_HINTS=1" >> $GITHUB_ENV
+            echo "HOMEBREW_DEVELOPER=1" >> $GITHUB_ENV
+
+        - name: Get version and revision of formula
+          id: get-version-revision
+          run: |
+            VERSION=$(brew info --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
+            REVISION=$(brew info --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "REVISION=$REVISION" >> $GITHUB_OUTPUT
+
+        - name: Download bottles from artifacts
+          uses: actions/download-artifact@v8
+          with:
+            name: bottles_*
+            merge-multiple: true
+
+        - name: Publish Release
+          id: publish-release
+          uses: softprops/action-gh-release@v3
+          with:
+            name: Release v${{ steps.get-version-revision.outputs.VERSION }}
+            tag_name: v${{ steps.get-version-revision.outputs.VERSION }}
+            files: |
+              *.bottle.tar.gz
+              *.bottle.json
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        - name: Update bottles and commit
+          id: add-bottle-formula
+          run: |
+            brew bottle --merge --write ./Formula/snapx.rb *.bottle.json
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add ./Formula/snapx.rb
+
+            REV_STR=""
+            if [ "${{ steps.get-version-revision.outputs.REVISION }}" != "0" ]; then
+              REV_STR="_${{ steps.get-version-revision.outputs.REVISION }}"
+            fi
+
+            git commit -m "chore: update bottles for v${{ steps.get-version-revision.outputs.VERSION }}${REV_STR}" [skip ci]"
+            git push origin main
