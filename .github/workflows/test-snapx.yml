@@ -19,45 +19,47 @@ jobs:
       matrix:
         os: [ macos-latest, ubuntu-latest ]
     steps:
-        - name: Set environment variables
-          id: set-env
-          run: |
-            echo "HOMEBREW_NO_INSTALL_FROM_API=1" >> $GITHUB_ENV
-            echo "HOMEBREW_NO_ENV_HINTS=1" >> $GITHUB_ENV
-            echo "HOMEBREW_DEVELOPER=1" >> $GITHUB_ENV
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
 
-        - name: Set up Homebrew
-          id: set-up-homebrew
-          uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
+      - name: Set environment variables
+        id: set-env
+        run: |
+          {
+            echo "HOMEBREW_NO_INSTALL_FROM_API=1"
+            echo "HOMEBREW_NO_ENV_HINTS=1"
+            echo "HOMEBREW_DEVELOPER=1"
+          } >> $GITHUB_ENV
 
-        - name: Prerequisites (Ubuntu)
-          id: prerequisites-ubuntu
-          if: runner.os == 'Linux'
-          run: |
-            sudo add-apt-repository -y ppa:kisak/kisak-mesa
-            sudo apt update -y
-            sudo apt upgrade -y
-            sudo apt install -y xdg-utils mesa-utils x11-xserver-utils
-            sudo mkdir -p /run/user/0/SnapX
+      - name: Prerequisites (Ubuntu)
+        id: prerequisites-ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo add-apt-repository -y ppa:kisak/kisak-mesa
+          sudo apt update -y
+          sudo apt upgrade -y
+          sudo apt install -y xdg-utils mesa-utils x11-xserver-utils
+          sudo mkdir -p /run/user/0/SnapX
 
-        - name: Brew Test Bot
-          id: brew-test-bot
-          run: |
-            VERSION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
-            brew test-bot --only-cleanup-before
-            brew test-bot --only-setup
-            brew test-bot --only-tap-syntax
-            brew test-bot --only-formulae --root-url="https://github.com/${{ github.repository }}/releases/download/v$VERSION"
+      - name: Brew Test Bot
+        id: brew-test-bot
+        run: |
+          VERSION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
+          brew test-bot --only-cleanup-before
+          brew test-bot --only-setup
+          brew test-bot --only-tap-syntax
+          brew test-bot --only-formulae --root-url="https://github.com/${{ github.repository }}/releases/download/v${VERSION}"
 
-        - name: Upload bottles as artifacts
-          uses: actions/upload-artifact@v7
-          with:
-            name: bottles_${{ matrix.os }}
-            path: '*.bottle.*'
+      - name: Upload bottles as artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: bottles_${{ matrix.os }}
+          path: '*.bottle.*'
 
   release:
       name: Publish Release
-      runs-on: ubuntu-latest
+      runs-on: macos-latest
       needs: brew-test-bot
       steps:
         - name: Checkout repository
@@ -70,22 +72,24 @@ jobs:
         - name: Set environment variables
           id: set-env
           run: |
-            echo "HOMEBREW_NO_INSTALL_FROM_API=1" >> $GITHUB_ENV
-            echo "HOMEBREW_NO_ENV_HINTS=1" >> $GITHUB_ENV
-            echo "HOMEBREW_DEVELOPER=1" >> $GITHUB_ENV
+            {
+              echo "HOMEBREW_NO_INSTALL_FROM_API=1"
+              echo "HOMEBREW_NO_ENV_HINTS=1"
+              echo "HOMEBREW_DEVELOPER=1"
+            } >> $GITHUB_ENV
 
         - name: Get version and revision of formula
           id: get-version-revision
           run: |
-            VERSION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
-            REVISION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-            echo "REVISION=$REVISION" >> $GITHUB_OUTPUT
+            VERSION="$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')"
+            REVISION="$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')"
+            echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+            echo "REVISION=${REVISION}" >> $GITHUB_OUTPUT
 
         - name: Download bottles from artifacts
           uses: actions/download-artifact@v8
           with:
-            name: bottles_*
+            pattern: bottles_*
             merge-multiple: true
 
         - name: Publish Release
@@ -113,5 +117,5 @@ jobs:
               REV_STR="_${{ steps.get-version-revision.outputs.REVISION }}"
             fi
 
-            git commit -m "chore: update bottles for v${{ steps.get-version-revision.outputs.VERSION }}${REV_STR}" [skip ci]"
+            git commit -m "chore: update bottles for v${{ steps.get-version-revision.outputs.VERSION }}${REV_STR} [skip ci]"
             git push origin main
