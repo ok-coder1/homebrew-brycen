@@ -49,7 +49,7 @@ jobs:
           brew test-bot --only-cleanup-before
           brew test-bot --only-setup
           brew test-bot --only-tap-syntax
-          brew test-bot --only-formulae --root-url="https://github.com/${{ github.repository }}/releases/download/v${VERSION}"
+          brew test-bot --only-formulae --testing-formulae=snapx --root-url="https://github.com/${{ github.repository }}/releases/download/v${VERSION}"
 
       - name: Upload bottles as artifacts
         uses: actions/upload-artifact@v7
