@@ -28,7 +28,7 @@ jobs:
 
         - name: Set up Homebrew
           id: set-up-homebrew
-          uses: Homebrew/actions/setup-homebrew@master
+          uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
 
         - name: Prerequisites (Ubuntu)
           id: prerequisites-ubuntu
@@ -43,10 +43,10 @@ jobs:
         - name: Brew Test Bot
           id: brew-test-bot
           run: |
-            echo "VERSION=$(brew info --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')" >> GITHUB_ENV
+            VERSION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
             brew test-bot --only-cleanup-before
             brew test-bot --only-setup
-            brew test-bot --only-programmatic-checks
+            brew test-bot --only-tap-syntax
             brew test-bot --only-formulae --root-url="https://github.com/${{ github.repository }}/releases/download/v$VERSION"
 
         - name: Upload bottles as artifacts
@@ -65,7 +65,7 @@ jobs:
 
         - name: Set up Homebrew
           id: set-up-homebrew
-          uses: Homebrew/actions/setup-homebrew@master
+          uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
 
         - name: Set environment variables
           id: set-env
@@ -77,8 +77,8 @@ jobs:
         - name: Get version and revision of formula
           id: get-version-revision
           run: |
-            VERSION=$(brew info --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
-            REVISION=$(brew info --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')
+            VERSION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')
+            REVISION=$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')
             echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
             echo "REVISION=$REVISION" >> $GITHUB_OUTPUT
 
