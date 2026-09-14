@@ -30,7 +30,7 @@ jobs:
             echo "HOMEBREW_NO_INSTALL_FROM_API=1"
             echo "HOMEBREW_NO_ENV_HINTS=1"
             echo "HOMEBREW_DEVELOPER=1"
-          } >> $GITHUB_ENV
+          } >> "$GITHUB_ENV"
 
       - name: Prerequisites (Ubuntu)
         id: prerequisites-ubuntu
@@ -58,64 +58,64 @@ jobs:
           path: '*.bottle.*'
 
   release:
-      name: Publish Release
-      runs-on: macos-latest
-      needs: brew-test-bot
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v7
+    name: Publish Release
+    runs-on: macos-latest
+    needs: brew-test-bot
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-        - name: Set up Homebrew
-          id: set-up-homebrew
-          uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
 
-        - name: Set environment variables
-          id: set-env
-          run: |
-            {
-              echo "HOMEBREW_NO_INSTALL_FROM_API=1"
-              echo "HOMEBREW_NO_ENV_HINTS=1"
-              echo "HOMEBREW_DEVELOPER=1"
-            } >> $GITHUB_ENV
+      - name: Set environment variables
+        id: set-env
+        run: |
+          {
+            echo "HOMEBREW_NO_INSTALL_FROM_API=1"
+            echo "HOMEBREW_NO_ENV_HINTS=1"
+            echo "HOMEBREW_DEVELOPER=1"
+          } >> "$GITHUB_ENV"
 
-        - name: Get version and revision of formula
-          id: get-version-revision
-          run: |
-            VERSION="$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')"
-            REVISION="$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')"
-            echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-            echo "REVISION=${REVISION}" >> $GITHUB_OUTPUT
+      - name: Get version and revision of formula
+        id: get-version-revision
+        run: |
+          VERSION="$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].versions.stable')"
+          REVISION="$(brew info --formula --json=v2 ./Formula/snapx.rb | jq -r '.formulae[0].revision')"
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "REVISION=${REVISION}" >> "$GITHUB_OUTPUT"
 
-        - name: Download bottles from artifacts
-          uses: actions/download-artifact@v8
-          with:
-            pattern: bottles_*
-            merge-multiple: true
+      - name: Download bottles from artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: bottles_*
+          merge-multiple: true
 
-        - name: Publish Release
-          id: publish-release
-          uses: softprops/action-gh-release@v3
-          with:
-            name: Release v${{ steps.get-version-revision.outputs.VERSION }}
-            tag_name: v${{ steps.get-version-revision.outputs.VERSION }}
-            files: |
-              *.bottle.tar.gz
-              *.bottle.json
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish Release
+        id: publish-release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Release v${{ steps.get-version-revision.outputs.VERSION }}
+          tag_name: v${{ steps.get-version-revision.outputs.VERSION }}
+          files: |
+            *.bottle.tar.gz
+            *.bottle.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-        - name: Update bottles and commit
-          id: add-bottle-formula
-          run: |
-            brew bottle --merge --write ./Formula/snapx.rb *.bottle.json
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add ./Formula/snapx.rb
+      - name: Update bottles and commit
+        id: add-bottle-formula
+        run: |
+          brew bottle --merge --write ./Formula/snapx.rb ./*.bottle.json
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ./Formula/snapx.rb
 
-            REV_STR=""
-            if [ "${{ steps.get-version-revision.outputs.REVISION }}" != "0" ]; then
-              REV_STR="_${{ steps.get-version-revision.outputs.REVISION }}"
-            fi
+          REV_STR=""
+          if [ "${{ steps.get-version-revision.outputs.REVISION }}" != "0" ]; then
+            REV_STR="_${{ steps.get-version-revision.outputs.REVISION }}"
+          fi
 
-            git commit -m "chore: update bottles for v${{ steps.get-version-revision.outputs.VERSION }}${REV_STR} [skip ci]"
-            git push origin main
+          git commit -m "chore: update bottles for v${{ steps.get-version-revision.outputs.VERSION }}${REV_STR} [skip ci]"
+          git push origin main

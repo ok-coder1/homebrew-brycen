@@ -23,10 +23,10 @@ class Snapx < Formula
   end
   on_linux do
     depends_on "dbus"
+    depends_on "libsecret"
     depends_on "libsm"
     depends_on "libx11"
     depends_on "libxcb"
-    depends_on "libsecret"
     depends_on "libxrandr"
   end
 

@@ -3,9 +3,9 @@
 
 # Homebrew Tap for My Software
 
-This is the official Homebrew tap for distributing software maintained by Brycen. 
+This is the official Homebrew tap for distributing software maintained by Brycen.
 
-Since my binaries are NOT signed ($100 per year!), this was created as a way to distribute my software regardless. 
+Since my binaries are NOT signed ($100 per year!), this was created as a way to distribute my software regardless.
 
 ## Installation
 
@@ -29,7 +29,7 @@ All software in this tap is distributed with Homebrew bottles (prebuilt binaries
 
 ### Cross-platform
 
-I have always prioritized my software to be [cross-platform](https://en.wikipedia.org/wiki/Cross-platform_software). 
+I have always prioritized my software to be [cross-platform](https://en.wikipedia.org/wiki/Cross-platform_software).
 
 However, with Casks, it doesn't allow the application to be installed via Ubuntu. Only macOS.
 
@@ -37,6 +37,6 @@ I have opted to *not* use them even for my GUI applications. It will use a norma
 
 ### Feedback & Issues
 
-This repository's issues tab has been disabled. 
+This repository's issues tab has been disabled.
 
 If you have any issues with the software distributed here, open an issue in the respective project repository if you encounter any problems.
