@@ -35,7 +35,7 @@ class Snapx < Formula
     ENV["ELEVATION_NOT_NEEDED"] = "1"
     ENV["PKGTYPE"] = "HOMEBREW"
     ENV["ALLOW_DOTNET_DOWNLOAD"] = "1"
-    system "./build.sh", "install", "--prefix", prefix
+    system "./build.sh", "install", "--verbose", "--prefix", prefix
   end
 
   def caveats

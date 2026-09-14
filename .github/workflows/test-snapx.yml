@@ -107,7 +107,7 @@ jobs:
       - name: Update bottles and commit
         id: add-bottle-formula
         run: |
-          brew bottle --merge --write ./Formula/snapx.rb ./*.bottle.json
+          brew bottle --merge --write --no-commit ./Formula/snapx.rb ./*.bottle.json
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ./Formula/snapx.rb
